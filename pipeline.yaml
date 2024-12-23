@@ -1,0 +1,357 @@
+# PIPELINE DEFINITION
+# Name: project-template
+# Outputs:
+#    download-data-metrics: system.Metrics
+#    prepare-data-metrics: system.Metrics
+#    switch-model-metrics: system.Metrics
+#    train-model-metrics: system.ClassificationMetrics
+components:
+  comp-download-data:
+    executorLabel: exec-download-data
+    outputDefinitions:
+      artifacts:
+        data:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+        metrics:
+          artifactType:
+            schemaTitle: system.Metrics
+            schemaVersion: 0.0.1
+  comp-prepare-data:
+    executorLabel: exec-prepare-data
+    inputDefinitions:
+      artifacts:
+        data:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+    outputDefinitions:
+      artifacts:
+        metrics:
+          artifactType:
+            schemaTitle: system.Metrics
+            schemaVersion: 0.0.1
+        test:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+        train:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+  comp-switch-model:
+    executorLabel: exec-switch-model
+    inputDefinitions:
+      artifacts:
+        model:
+          artifactType:
+            schemaTitle: system.Artifact
+            schemaVersion: 0.0.1
+        test:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+    outputDefinitions:
+      artifacts:
+        metrics:
+          artifactType:
+            schemaTitle: system.Metrics
+            schemaVersion: 0.0.1
+  comp-train-model:
+    executorLabel: exec-train-model
+    inputDefinitions:
+      artifacts:
+        test:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+        train:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+    outputDefinitions:
+      artifacts:
+        metrics:
+          artifactType:
+            schemaTitle: system.ClassificationMetrics
+            schemaVersion: 0.0.1
+        model:
+          artifactType:
+            schemaTitle: system.Artifact
+            schemaVersion: 0.0.1
+deploymentSpec:
+  executors:
+    exec-download-data:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        command:
+        - python
+        - pipeline_steps/download_data/task.py
+        env:
+        - name: S3_BUCKET
+          value: p-dp-mlops
+        - name: S3_ENDPOINT
+          value: https://storage.yandexcloud.net
+        - name: GP_NAME
+          value: adb
+        - name: GP_HOST
+          value: gp.data.lmru.tech
+        - name: GP_PORT
+          value: '5432'
+        - name: PROMETHEUS_URL
+        - name: VAULT_NAMESPACE
+          value: mlops-template
+        - name: VAULT_PATH
+          value: secret_vars
+        - name: VAULT_MOUNT_POINT
+          value: prod
+        image: docker-local-dataplatform.art.lmru.tech/dataplatform/mlops/project-template/base-image:develop
+    exec-prepare-data:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        command:
+        - python
+        - pipeline_steps/prepare_data/task.py
+        env:
+        - name: S3_BUCKET
+          value: p-dp-mlops
+        - name: S3_ENDPOINT
+          value: https://storage.yandexcloud.net
+        - name: GP_NAME
+          value: adb
+        - name: GP_HOST
+          value: gp.data.lmru.tech
+        - name: GP_PORT
+          value: '5432'
+        - name: PROMETHEUS_URL
+        - name: VAULT_NAMESPACE
+          value: mlops-template
+        - name: VAULT_PATH
+          value: secret_vars
+        - name: VAULT_MOUNT_POINT
+          value: prod
+        image: docker-local-dataplatform.art.lmru.tech/dataplatform/mlops/project-template/base-image:develop
+    exec-switch-model:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        command:
+        - python
+        - pipeline_steps/switch_model/task.py
+        env:
+        - name: S3_BUCKET
+          value: p-dp-mlops
+        - name: S3_ENDPOINT
+          value: https://storage.yandexcloud.net
+        - name: GP_NAME
+          value: adb
+        - name: GP_HOST
+          value: gp.data.lmru.tech
+        - name: GP_PORT
+          value: '5432'
+        - name: PROMETHEUS_URL
+        - name: VAULT_NAMESPACE
+          value: mlops-template
+        - name: VAULT_PATH
+          value: secret_vars
+        - name: VAULT_MOUNT_POINT
+          value: prod
+        image: docker-local-dataplatform.art.lmru.tech/dataplatform/mlops/project-template/base-image:develop
+    exec-train-model:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        command:
+        - python
+        - pipeline_steps/train_model/task.py
+        env:
+        - name: S3_BUCKET
+          value: p-dp-mlops
+        - name: S3_ENDPOINT
+          value: https://storage.yandexcloud.net
+        - name: GP_NAME
+          value: adb
+        - name: GP_HOST
+          value: gp.data.lmru.tech
+        - name: GP_PORT
+          value: '5432'
+        - name: PROMETHEUS_URL
+        - name: VAULT_NAMESPACE
+          value: mlops-template
+        - name: VAULT_PATH
+          value: secret_vars
+        - name: VAULT_MOUNT_POINT
+          value: prod
+        image: docker-local-dataplatform.art.lmru.tech/dataplatform/mlops/project-template/base-image:develop
+pipelineInfo:
+  name: project-template
+root:
+  dag:
+    outputs:
+      artifacts:
+        download-data-metrics:
+          artifactSelectors:
+          - outputArtifactKey: metrics
+            producerSubtask: download-data
+        prepare-data-metrics:
+          artifactSelectors:
+          - outputArtifactKey: metrics
+            producerSubtask: prepare-data
+        switch-model-metrics:
+          artifactSelectors:
+          - outputArtifactKey: metrics
+            producerSubtask: switch-model
+        train-model-metrics:
+          artifactSelectors:
+          - outputArtifactKey: metrics
+            producerSubtask: train-model
+    tasks:
+      download-data:
+        cachingOptions: {}
+        componentRef:
+          name: comp-download-data
+        retryPolicy:
+          backoffDuration: 3600s
+          backoffFactor: 1.0
+          backoffMaxDuration: 3600s
+          maxRetryCount: 12
+        taskInfo:
+          name: download-data
+      prepare-data:
+        cachingOptions: {}
+        componentRef:
+          name: comp-prepare-data
+        dependentTasks:
+        - download-data
+        inputs:
+          artifacts:
+            data:
+              taskOutputArtifact:
+                outputArtifactKey: data
+                producerTask: download-data
+        retryPolicy:
+          backoffDuration: 3600s
+          backoffFactor: 1.0
+          backoffMaxDuration: 3600s
+          maxRetryCount: 12
+        taskInfo:
+          name: prepare-data
+      switch-model:
+        cachingOptions: {}
+        componentRef:
+          name: comp-switch-model
+        dependentTasks:
+        - prepare-data
+        - train-model
+        inputs:
+          artifacts:
+            model:
+              taskOutputArtifact:
+                outputArtifactKey: model
+                producerTask: train-model
+            test:
+              taskOutputArtifact:
+                outputArtifactKey: test
+                producerTask: prepare-data
+        retryPolicy:
+          backoffDuration: 3600s
+          backoffFactor: 1.0
+          backoffMaxDuration: 3600s
+          maxRetryCount: 12
+        taskInfo:
+          name: switch-model
+      train-model:
+        cachingOptions: {}
+        componentRef:
+          name: comp-train-model
+        dependentTasks:
+        - prepare-data
+        inputs:
+          artifacts:
+            test:
+              taskOutputArtifact:
+                outputArtifactKey: test
+                producerTask: prepare-data
+            train:
+              taskOutputArtifact:
+                outputArtifactKey: train
+                producerTask: prepare-data
+        retryPolicy:
+          backoffDuration: 3600s
+          backoffFactor: 1.0
+          backoffMaxDuration: 3600s
+          maxRetryCount: 12
+        taskInfo:
+          name: train-model
+  outputDefinitions:
+    artifacts:
+      download-data-metrics:
+        artifactType:
+          schemaTitle: system.Metrics
+          schemaVersion: 0.0.1
+      prepare-data-metrics:
+        artifactType:
+          schemaTitle: system.Metrics
+          schemaVersion: 0.0.1
+      switch-model-metrics:
+        artifactType:
+          schemaTitle: system.Metrics
+          schemaVersion: 0.0.1
+      train-model-metrics:
+        artifactType:
+          schemaTitle: system.ClassificationMetrics
+          schemaVersion: 0.0.1
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.7.0
+---
+platforms:
+  kubernetes:
+    deploymentSpec:
+      executors:
+        exec-download-data:
+          secretAsEnv:
+          - keyToEnv:
+            - envVar: VAULT_ROLE_ID
+              secretKey: role_id
+            secretName: vault-approle-mlops-template
+          - keyToEnv:
+            - envVar: VAULT_SECRET_ID
+              secretKey: secret_id
+            secretName: vault-approle-mlops-template
+        exec-prepare-data:
+          secretAsEnv:
+          - keyToEnv:
+            - envVar: VAULT_ROLE_ID
+              secretKey: role_id
+            secretName: vault-approle-mlops-template
+          - keyToEnv:
+            - envVar: VAULT_SECRET_ID
+              secretKey: secret_id
+            secretName: vault-approle-mlops-template
+        exec-switch-model:
+          secretAsEnv:
+          - keyToEnv:
+            - envVar: VAULT_ROLE_ID
+              secretKey: role_id
+            secretName: vault-approle-mlops-template
+          - keyToEnv:
+            - envVar: VAULT_SECRET_ID
+              secretKey: secret_id
+            secretName: vault-approle-mlops-template
+        exec-train-model:
+          secretAsEnv:
+          - keyToEnv:
+            - envVar: VAULT_ROLE_ID
+              secretKey: role_id
+            secretName: vault-approle-mlops-template
+          - keyToEnv:
+            - envVar: VAULT_SECRET_ID
+              secretKey: secret_id
+            secretName: vault-approle-mlops-template
